@@ -29,7 +29,7 @@ type Account struct {
 	Name         string `json:"name"`
 	OfficialName string `json:"official_name"`
 	Type         string `json:"type"`
-	SubType      string `json:"sub_type"`
+	SubType      string `json:"subtype"`
 }
 
 type AuthRequest struct {
