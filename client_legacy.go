@@ -17,6 +17,8 @@ func NewLegacyClient(id, secret, environment string) (*LegacyClient, error) {
 	case Production:
 		environmentUrl = legacyProductionUrl
 	case Development, Sandbox:
+		id = letacyTestClientId
+		secret = legacyTestSecret
 		environmentUrl = legacyDevelopmentUrl
 	default:
 		return nil, errors.New("invalid environment")
