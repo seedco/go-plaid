@@ -39,6 +39,19 @@ type Client struct {
 	client
 }
 
+type errorMessage struct {
+	DisplayMessage string `json:"string,omitempty"`
+	ErrorCode      string `json:"error_code,omitempty"`
+	ErrorMessage   string `json:"error_message,omitempty"`
+	ErrorType      string `json:"error_type,omitempty"`
+	RequestId      string `json:"request_id,omitempty"`
+}
+
+type ErrorMessage struct {
+	errorMessage
+	errorMessageLegacy
+}
+
 func NewClient(id, secret, environment string) (*Client, error) {
 	httpClient := &http.Client{}
 
@@ -66,7 +79,7 @@ func NewClient(id, secret, environment string) (*Client, error) {
 	return client, nil
 }
 
-func (c *client) postAndUnmarshal(endpoint string, body io.Reader, result interface{}) error {
+func (c *Client) postAndUnmarshal(endpoint string, body io.Reader, result interface{}) error {
 	req, err := http.NewRequest("POST", string(c.environmentUrl)+endpoint, body)
 	if err != nil {
 		return fmt.Errorf("Error when creating plaid post request %v: %v", endpoint, err)
@@ -77,12 +90,16 @@ func (c *client) postAndUnmarshal(endpoint string, body io.Reader, result interf
 	if err != nil {
 		return fmt.Errorf("Error when executing plaid post request %v: %v", endpoint, err)
 	}
+	defer res.Body.Close()
 	// throw an error on any non-200 response
 	if res.StatusCode/100 != 2 {
-		return fmt.Errorf("Non-200 response when exeucting plaid post request %v: %d %v", endpoint, res.StatusCode, res.Status)
+		var errorMsg errorMessage
+		if err := json.NewDecoder(res.Body).Decode(&errorMsg); err != nil {
+			return fmt.Errorf("Error when decoding plaid error response %v: %v", endpoint, err)
+		}
+		return fmt.Errorf("Non-200 response when exeucting plaid post request %v: %d %v", endpoint, res.StatusCode, errorMsg.ErrorMessage)
 	}
 
-	defer res.Body.Close()
 	if err := json.NewDecoder(res.Body).Decode(result); err != nil {
 		return fmt.Errorf("Error when decoding plaid post response %v: %v", endpoint, err)
 	}
